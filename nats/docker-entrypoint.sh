@@ -4,7 +4,7 @@ set -e
 DIR=/docker-entrypoint.d
 
 # Run NATS when asked to do so
-if [ "$1" = 'nats' ]; then
+if [ "$1" == 'nats' ]; then
   # Execute entrypoint hooks (runtime configurations)
   if [ -d "$DIR" ]; then
     echo "===> Executing entrypoint hooks under docker-entrypoint.d"
@@ -13,7 +13,7 @@ if [ "$1" = 'nats' ]; then
   fi
 
   echo "===> Starting NATS ${NATS_VERSION}"
-  exec /usr/local/bin/gnatsd -c /etc/nats/gnatsd.conf
+  exec ${GOPATH}/bin/gnatsd -c /etc/nats/gnatsd.conf
 fi
 
 # Run CMD
