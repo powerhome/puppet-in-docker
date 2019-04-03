@@ -1,4 +1,4 @@
-FROM alpine:3.6
+FROM golang:1.12-alpine
 
 ARG NATS_VERSION="0.9.6"
 ENV DUMB_INIT_VERSION="1.2.2"
@@ -22,7 +22,6 @@ CMD ["nats"]
 
 COPY Dockerfile /
 
-# TODO checksum check
 RUN apk add --no-cache \
       run-parts \
       ruby \
@@ -30,18 +29,20 @@ RUN apk add --no-cache \
       ca-certificates \
       wget \
       openssl \
+      git \
       netcat-openbsd \
-      unzip \
-      bash && \
-      update-ca-certificates && \
-      wget -O /usr/local/bin/dumb-init https://github.com/Yelp/dumb-init/releases/download/v"$DUMB_INIT_VERSION"/dumb-init_"$DUMB_INIT_VERSION"_amd64 && \
-      wget -O /tmp/gnats.zip https://github.com/nats-io/gnatsd/releases/download/v"$NATS_VERSION"/gnatsd-v"$NATS_VERSION"-linux-amd64.zip && \
-      unzip /tmp/gnats.zip -d /tmp && mv /tmp/gnatsd-v"$NATS_VERSION"-linux-amd64/gnatsd /usr/local/bin/gnatsd && \
-      rm -rf /tmp/gnats.zip /tmp/gnatsd-v"$NATS_VERSION"-linux-amd64/ && \
-      chmod +x /usr/local/bin/dumb-init /usr/local/bin/gnatsd && \
+      bash
+
+RUN wget -O /usr/local/bin/dumb-init https://github.com/Yelp/dumb-init/releases/download/v"$DUMB_INIT_VERSION"/dumb-init_"$DUMB_INIT_VERSION"_amd64 && \
+      chmod +x /usr/local/bin/dumb-init && \
       adduser -h /etc/nats -s /bin/sh -S -D -H nats && \
       mkdir /etc/nats && \
-      chown -R nats /etc/nats
+      chown -R nats /etc/nats && \
+      mkdir -p /go/src/github.com/nats-io
+
+RUN git clone -b "v${NATS_VERSION}" https://github.com/nats-io/gnatsd.git $GOPATH/src/github.com/nats-io/gnatsd
+WORKDIR /go/src/github.com/nats-io/gnatsd
+RUN CGO_ENABLED=0 go install -v -a -tags netgo -installsuffix netgo -ldflags "-s -w -X github.com/nats-io/gnatsd/server.gitCommit=`git rev-parse --short HEAD`"
 
 # Add configuration files into the image
 COPY request-cert.rb /usr/local/bin

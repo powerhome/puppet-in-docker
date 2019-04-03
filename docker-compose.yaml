@@ -1,93 +1,112 @@
-version: '2.1'
+version: "2.4"
 
 services:
   haproxy:
-    hostname: puppet
-    domainname: local
+    hostname: puppet.local
     build: haproxy
     volumes:
       - haproxy_ssl:/usr/local/etc/haproxy/ssl/
-    links:
-      - puppetdb:puppetdb.local
-      - puppetca:puppetca.local
-      - puppetserver:puppetserver.local
-      - puppetexplorer:puppetexplorer.local
+    networks:
+      local:
+        aliases:
+          - puppet.local
     ports:
       - 8081:8081
       - 8082:8082
       - 8140:8140
       - 9000:9000
+    environment:
+      - CA_SERVER=puppetca.local
+
   puppetca:
-    hostname: puppetca
-    domainname: local
+    hostname: puppetca.local
     build: puppetserver
     volumes:
       - ca_ssl:/etc/puppetlabs/puppet/ssl/
       - ca_data:/opt/puppetlabs/server/data/puppetserver/
+    networks:
+      local:
+        aliases:
+          - puppetca.local
     environment:
       - CA=enabled
+      - CA_NAME=puppetca.local
+
   puppetserver:
-    hostname: puppetserver
-    domainname: local
+    hostname: puppetserver.local
     build: puppetserver
     volumes:
       - server_ssl:/etc/puppetlabs/puppet/ssl/
       - server_data:/opt/puppetlabs/server/data/puppetserver/
       - r10k_env:/etc/puppetlabs/code/environments/
-    links:
-      - puppetdb:puppetdb.local
-      - puppetca:puppetca.local
-    environment:
-      - PUPPETDB_SERVER_URL=puppetdb.local:8081
+    networks:
+      local:
+        aliases:
+          - puppetserver.local
+
   puppetdb:
-    hostname: puppetdb
-    domainname: local
+    hostname: puppetdb.local
     build: puppetdb
     volumes:
       - db_ssl:/etc/puppetlabs/puppet/ssl/
-    links:
-      - postgres
-      - puppetca:puppetca.local
+    networks:
+      local:
+        aliases:
+          - puppetdb.local
+    environment:
+      - PUPPETDB_USER=puppetdb
+      - PUPPETDB_PASSWORD=${PUPPETDB_PASSWORD}
+
   puppetexplorer:
-    hostname: puppetexplorer
-    domainname: local
+    hostname: puppetexplorer.local
     build: puppetexplorer
-    links:
-      - puppetdb:puppetdb.local
+    networks:
+      local:
+        aliases:
+          - puppetexplorer.local
+
   postgres:
-    hostname: postgres
-    domainname: local
+    hostname: postgres.local
     build: postgres
     environment:
-      - POSTGRES_PASSWORD=puppetdb
       - POSTGRES_USER=puppetdb
+      - POSTGRES_PASSWORD=${PUPPETDB_PASSWORD}
     volumes:
       - postgres:/var/lib/postgresql/data/
+    networks:
+      local:
+        aliases:
+          - postgres.local
+
+  nats:
+    hostname: nats.local
+    build: nats
+    environment:
+      - CA_SERVER=puppetca.local
+    volumes:
+      - nats_ssl:/etc/nats/ssl
+    networks:
+      local:
+        aliases:
+          - nats.local
+    ports:
+      - 4222:4222
+
   r10k:
-    hostname: r10k
-    domainname: local
+    hostname: r10k.local
     build: r10k
     environment:
-      - R10K_REPO=git@github.com:myorg/control.git
-      - R10K_DEPLOY_KEY="this is not a key"
+      - R10K_REPO=${R10K_REPO}
       - MCO_R10K_POLICY="policy default deny"
     volumes:
       - r10k_env:/etc/puppetlabs/code/environments
       - r10k_cache:/opt/puppetlabs/r10k/cache
       - r10k_ssl:/etc/puppetlabs/puppet/ssl
-    links:
-      - nats:nats.local
-      - puppetca:puppetca.local
-  nats:
-    hostname: nats
-    domainname: local
-    build: nats
-    volumes:
-      - nats_ssl:/etc/nats/ssl
-    links:
-      - puppetca:puppetca.local
-    ports:
-      - 4222:4222
+      - /root/.ssh/id_rsa:/root/.ssh/id_rsa
+    networks:
+      local:
+        aliases:
+          - r10k.local
 
 volumes:
   ca_data:
@@ -101,3 +120,6 @@ volumes:
   r10k_ssl:
   server_data:
   server_ssl:
+
+networks:
+   local:

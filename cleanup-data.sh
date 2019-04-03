@@ -1,18 +1,21 @@
 #!/usr/bin/env bash
-VOLUME_PREFIX=${VOLUME_PREFIX:-puppetindocker}
+source .env || true
+COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-${PWD##*/}}
 volumes="
-${VOLUME_PREFIX}_ca_data
-${VOLUME_PREFIX}_ca_ssl
-${VOLUME_PREFIX}_db_ssl
-${VOLUME_PREFIX}_haproxy_ssl
-${VOLUME_PREFIX}_nats_ssl
-${VOLUME_PREFIX}_postgres
-${VOLUME_PREFIX}_r10k_cache
-${VOLUME_PREFIX}_r10k_env
-${VOLUME_PREFIX}_r10k_ssl
-${VOLUME_PREFIX}_server_data
-${VOLUME_PREFIX}_server_ssl
+${COMPOSE_PROJECT_NAME}_ca_data
+${COMPOSE_PROJECT_NAME}_ca_ssl
+${COMPOSE_PROJECT_NAME}_db_ssl
+${COMPOSE_PROJECT_NAME}_haproxy_ssl
+${COMPOSE_PROJECT_NAME}_nats_ssl
+${COMPOSE_PROJECT_NAME}_postgres
+${COMPOSE_PROJECT_NAME}_r10k_cache
+${COMPOSE_PROJECT_NAME}_r10k_env
+${COMPOSE_PROJECT_NAME}_r10k_ssl
+${COMPOSE_PROJECT_NAME}_server_data
+${COMPOSE_PROJECT_NAME}_server_ssl
 "
+
+docker-compose rm
 
 case $1 in
   'data' )
