@@ -2,24 +2,28 @@ version: "2.4"
 
 services:
   haproxy:
-    hostname: puppet.local
+    hostname: ${DOMAIN}
     build: haproxy
     volumes:
       - haproxy_ssl:/usr/local/etc/haproxy/ssl/
     networks:
       local:
         aliases:
-          - puppet.local
+          - ${DOMAIN}
     ports:
       - 8081:8081
       - 8082:8082
       - 8140:8140
       - 9000:9000
     environment:
-      - CA_SERVER=puppetca.local
+      - CA_SERVER=ca.${DOMAIN}
+      - PUPPETCA_BACKEND=ca.${DOMAIN}
+      - PUPPETDB_BACKEND=db.${DOMAIN}
+      - PUPPETSERVER_BACKEND=server.${DOMAIN}
+      - PUPPETEXPLORER_BACKEND=explorer.${DOMAIN}
 
-  puppetca:
-    hostname: puppetca.local
+  ca:
+    hostname: ca.${DOMAIN}
     build: puppetserver
     volumes:
       - ca_ssl:/etc/puppetlabs/puppet/ssl/
@@ -27,13 +31,14 @@ services:
     networks:
       local:
         aliases:
-          - puppetca.local
+          - ca.${DOMAIN}
     environment:
       - CA=enabled
-      - CA_NAME=puppetca.local
+      - CA_NAME=ca.${DOMAIN}
+      - CA_SERVER=ca.${DOMAIN}
 
-  puppetserver:
-    hostname: puppetserver.local
+  server:
+    hostname: server.${DOMAIN}
     build: puppetserver
     volumes:
       - server_ssl:/etc/puppetlabs/puppet/ssl/
@@ -42,31 +47,37 @@ services:
     networks:
       local:
         aliases:
-          - puppetserver.local
+          - server.${DOMAIN}
+    environment:
+      - CA_SERVER=ca.${DOMAIN}
+      - PUPPETDB_SERVER_URL=db.${DOMAIN}:8081
 
-  puppetdb:
-    hostname: puppetdb.local
+  db:
+    hostname: db.${DOMAIN}
     build: puppetdb
     volumes:
       - db_ssl:/etc/puppetlabs/puppet/ssl/
     networks:
       local:
         aliases:
-          - puppetdb.local
+          - db.${DOMAIN}
     environment:
+      - CA_SERVER=ca.${DOMAIN}
       - PUPPETDB_USER=puppetdb
       - PUPPETDB_PASSWORD=${PUPPETDB_PASSWORD}
 
-  puppetexplorer:
-    hostname: puppetexplorer.local
+  explorer:
+    hostname: explorer.${DOMAIN}
     build: puppetexplorer
     networks:
       local:
         aliases:
-          - puppetexplorer.local
+          - explorer.${DOMAIN}
+    environment:
+      - PUPPETDB_SERVER=db.${DOMAIN}
 
   postgres:
-    hostname: postgres.local
+    hostname: postgres.${DOMAIN}
     build: postgres
     environment:
       - POSTGRES_USER=puppetdb
@@ -76,28 +87,34 @@ services:
     networks:
       local:
         aliases:
-          - postgres.local
+          - postgres.${DOMAIN}
 
   nats:
-    hostname: nats.local
+    hostname: nats.${DOMAIN}
     build: nats
     environment:
-      - CA_SERVER=puppetca.local
+      - CA_SERVER=ca.${DOMAIN}
     volumes:
       - nats_ssl:/etc/nats/ssl
     networks:
       local:
         aliases:
-          - nats.local
+          - nats.${DOMAIN}
     ports:
       - 4222:4222
+    environment:
+      - CA_SERVER=ca.${DOMAIN}
 
   r10k:
-    hostname: r10k.local
+    hostname: r10k.${DOMAIN}
     build: r10k
     environment:
+      - CA_SERVER=ca.${DOMAIN}
       - R10K_REPO=${R10K_REPO}
       - MCO_R10K_POLICY="policy default deny"
+      - NATS=nats.${DOMAIN}:4222
+      - PUPPETDB=db.${DOMAIN}
+      - PUPPETSERVER=server.${DOMAIN}
     volumes:
       - r10k_env:/etc/puppetlabs/code/environments
       - r10k_cache:/opt/puppetlabs/r10k/cache
@@ -106,7 +123,7 @@ services:
     networks:
       local:
         aliases:
-          - r10k.local
+          - r10k.${DOMAIN}
 
 volumes:
   ca_data:
