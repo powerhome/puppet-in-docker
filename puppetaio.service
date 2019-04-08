@@ -1,0 +1,13 @@
+[Unit]
+Name=Puppet AiO
+Description=Puppet 5 configuration manager All-in-One composed stack
+
+[Service]
+WorkingDirectory=/opt/puppetaio/
+ExecStart=/usr/local/bin/docker-compose start
+ExecStop=/usr/local/bin/docker-compose stop
+
+[Install]
+WantedBy=default.target
+Requires=docker.service
+After=docker.service
