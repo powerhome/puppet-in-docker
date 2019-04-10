@@ -4,6 +4,7 @@ services:
   haproxy:
     hostname: ${DOMAIN}
     build: haproxy
+    image: quay.io/powerhome/puppetaio_haproxy:latest
     volumes:
       - haproxy_ssl:/usr/local/etc/haproxy/ssl/
     networks:
@@ -25,6 +26,7 @@ services:
   ca:
     hostname: ca.${DOMAIN}
     build: puppetserver
+    image: quay.io/powerhome/puppetaio_server:latest
     volumes:
       - ca_ssl:/etc/puppetlabs/puppet/ssl/
       - ca_data:/opt/puppetlabs/server/data/puppetserver/
@@ -40,6 +42,7 @@ services:
   server:
     hostname: server.${DOMAIN}
     build: puppetserver
+    image: quay.io/powerhome/puppetaio_server:latest
     volumes:
       - server_ssl:/etc/puppetlabs/puppet/ssl/
       - server_data:/opt/puppetlabs/server/data/puppetserver/
@@ -55,6 +58,7 @@ services:
   db:
     hostname: db.${DOMAIN}
     build: puppetdb
+    image: quay.io/powerhome/puppetaio_db:latest
     volumes:
       - db_ssl:/etc/puppetlabs/puppet/ssl/
     networks:
@@ -69,6 +73,7 @@ services:
   explorer:
     hostname: explorer.${DOMAIN}
     build: puppetexplorer
+    image: quay.io/powerhome/puppetaio_explorer:latest
     networks:
       local:
         aliases:
@@ -79,6 +84,7 @@ services:
   postgres:
     hostname: postgres.${DOMAIN}
     build: postgres
+    image: quay.io/powerhome/puppetaio_postgres:latest
     environment:
       - POSTGRES_USER=puppetdb
       - POSTGRES_PASSWORD=${PUPPETDB_PASSWORD}
@@ -92,6 +98,7 @@ services:
   nats:
     hostname: nats.${DOMAIN}
     build: nats
+    image: quay.io/powerhome/puppetaio_nats:latest
     environment:
       - CA_SERVER=ca.${DOMAIN}
     volumes:
@@ -108,6 +115,7 @@ services:
   r10k:
     hostname: r10k.${DOMAIN}
     build: r10k
+    image: quay.io/powerhome/puppetaio_r10k:latest
     environment:
       - CA_SERVER=ca.${DOMAIN}
       - R10K_REPO=${R10K_REPO}
