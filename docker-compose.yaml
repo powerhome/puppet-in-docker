@@ -115,15 +115,18 @@ services:
       - NATS=nats.${DOMAIN}:4222
       - PUPPETDB=db.${DOMAIN}
       - PUPPETSERVER=server.${DOMAIN}
+      - HOOKS_SECRET=${HOOKS_SECRET}
+      - R10K_DEPLOY_KEY_BASE64=${R10K_DEPLOY_KEY_BASE64}
     volumes:
       - r10k_env:/etc/puppetlabs/code/environments
       - r10k_cache:/opt/puppetlabs/r10k/cache
       - r10k_ssl:/etc/puppetlabs/puppet/ssl
-      - /root/.ssh/id_rsa:/root/.ssh/id_rsa
     networks:
       local:
         aliases:
           - r10k.${DOMAIN}
+    ports:
+      - 9050:9050
 
 volumes:
   ca_data:

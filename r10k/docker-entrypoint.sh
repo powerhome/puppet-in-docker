@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+#set -e
 
 DIR=/docker-entrypoint.d
 
@@ -12,10 +12,10 @@ if [ "$1" = 'r10k' ]; then
     echo "===> End of hooks"
   fi
 
+  echo "===> Starting Webhook listener"
+  exec /go/bin/webhook -hooks /etc/webhook/*.json -verbose -port ${WEBHOOK_PORT:-9050} &
+
   echo "===> Starting r10k ${R10K_VERSION} and MCollective server"
   ln -sf /proc/1/fd/1 /var/log/puppetlabs/mcollective.log
   exec /opt/puppetlabs/puppet/bin/mcollectived --no-daemonize
 fi
-
-# Run CMD
-exec "$@"
