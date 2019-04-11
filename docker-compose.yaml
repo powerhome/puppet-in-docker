@@ -38,6 +38,9 @@ services:
       - CA=enabled
       - CA_NAME=ca.${DOMAIN}
       - CA_SERVER=ca.${DOMAIN}
+      - CA_CRT_BASE64=${CA_CRT_BASE64}
+      - CA_KEY_BASE64=${CA_KEY_BASE64}
+      - CA_CRL_XZ_BASE64=${CA_CRL_XZ_BASE64}
 
   server:
     hostname: server.${DOMAIN}

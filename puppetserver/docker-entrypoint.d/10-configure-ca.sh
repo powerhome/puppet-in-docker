@@ -65,4 +65,55 @@ else
   fi
   echo "---> Configuring CA Expire / TTL to now +${CA_TTL}"
   puppet config set ca_ttl "$CA_TTL" --section master
+
+  if [ ! -f /etc/puppetlabs/puppet/ssl/ca/ca_crt.pem ]; then
+    if [ -n "${CA_CRT_BASE64}" ]; then
+      echo "---> Loading CA cert"
+      mkdir -p /etc/puppetlabs/puppet/ssl/ca /etc/puppetlabs/puppet/ssl/certs/
+      echo "${CA_CRT_BASE64}" | base64 -d > /etc/puppetlabs/puppet/ssl/ca/ca_crt.pem
+      openssl x509 -pubkey -noout -in /etc/puppetlabs/puppet/ssl/ca/ca_crt.pem > /etc/puppetlabs/puppet/ssl/ca/ca_pub.pem
+      cp /etc/puppetlabs/puppet/ssl/ca/ca_crt.pem /etc/puppetlabs/puppet/ssl/certs/ca.pem
+    else
+      echo "---> CA cert already present"
+    fi
+  fi
+
+  if [ ! -f /etc/puppetlabs/puppet/ssl/ca/ca_key.pem ]; then
+    if [ -n "${CA_KEY_BASE64}" ]; then
+      echo "---> Loading CA key"
+      mkdir -p /etc/puppetlabs/puppet/ssl/ca
+      echo "${CA_KEY_BASE64}" | base64 -d > /etc/puppetlabs/puppet/ssl/ca/ca_key.pem
+    else
+      echo "---> CA key already present"
+    fi
+  fi
+
+  if [ ! -f /etc/puppetlabs/puppet/ssl/ca/ca_crl.pem ]; then
+    if [ -n "${CA_CRL_XZ_BASE64}" ]; then
+      echo "---> Loading CA CRL"
+      mkdir -p /etc/puppetlabs/puppet/ssl/ca
+      echo "${CA_CRL_XZ_BASE64}" | base64 -d | xz -cd | base64 > /etc/puppetlabs/puppet/ssl/ca/ca_crl.pem.tmp
+      echo "-----BEGIN X509 CRL-----" > /etc/puppetlabs/puppet/ssl/ca/ca_crl.pem
+      cat /etc/puppetlabs/puppet/ssl/ca/ca_crl.pem.tmp >> /etc/puppetlabs/puppet/ssl/ca/ca_crl.pem
+      echo "-----END X509 CRL-----" >> /etc/puppetlabs/puppet/ssl/ca/ca_crl.pem
+    else
+      echo "---> CA CRL already present"
+    fi
+  fi
+
+  if [ ! -f /etc/puppetlabs/puppet/ssl/ca/serial ]; then
+    if [ -n "${CA_SERIAL}" ]; then
+      echo "---> Loading CA serial"
+      mkdir -p /etc/puppetlabs/puppet/ssl/ca
+      echo "${CA_SERIAL}" > /etc/puppetlabs/puppet/ssl/ca/serial
+    else
+      echo "---> Generating CA serial from current date"
+      printf '%X\n' $(date +%s) > /etc/puppetlabs/puppet/ssl/ca/serial
+    fi
+  else
+    echo "---> CA serial already present"
+  fi
+
+  touch /etc/puppetlabs/puppet/ssl/ca/inventory.txt
+  chown -R puppet. /etc/puppetlabs/puppet/ssl
 fi
