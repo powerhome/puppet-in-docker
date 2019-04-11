@@ -12,16 +12,20 @@ services:
         aliases:
           - ${DOMAIN}
     ports:
-      - 8081:8081
-      - 8082:8082
-      - 8140:8140
-      - 9000:9000
+      - 4222:4222   #TCP   - API - MCollective NATS
+      - 8081:8081   #HTTPS - API - PuppetDB
+      - 8082:8082   #HTTPS - UI  - PuppetExplorer
+      - 8140:8140   #HTTPS - API - PuppetServer
+      - 9000:9000   #HTTP  - UI  - HAProxy stats
+      - 9050:9050   #HTTP  - API - R10K Webhook
     environment:
+      - STATS_CRED=${STATS_CRED}
       - CA_SERVER=ca.${DOMAIN}
       - PUPPETCA_BACKEND=ca.${DOMAIN}
       - PUPPETDB_BACKEND=db.${DOMAIN}
       - PUPPETSERVER_BACKEND=server.${DOMAIN}
       - PUPPETEXPLORER_BACKEND=explorer.${DOMAIN}
+      - R10K_BACKEND=r10k.${DOMAIN}
 
   ca:
     hostname: ca.${DOMAIN}
@@ -56,7 +60,7 @@ services:
           - server.${DOMAIN}
     environment:
       - CA_SERVER=ca.${DOMAIN}
-      - PUPPETDB_SERVER_URL=db.${DOMAIN}:8081
+      - PUPPETDB_SERVER=db.${DOMAIN}
 
   db:
     hostname: db.${DOMAIN}
@@ -110,8 +114,6 @@ services:
       local:
         aliases:
           - nats.${DOMAIN}
-    ports:
-      - 4222:4222
     environment:
       - CA_SERVER=ca.${DOMAIN}
 
@@ -123,7 +125,7 @@ services:
       - CA_SERVER=ca.${DOMAIN}
       - R10K_REPO=${R10K_REPO}
       - MCO_R10K_POLICY="policy default deny"
-      - NATS=nats.${DOMAIN}:4222
+      - NATS=nats.${DOMAIN}
       - PUPPETDB=db.${DOMAIN}
       - PUPPETSERVER=server.${DOMAIN}
       - HOOKS_SECRET=${HOOKS_SECRET}
@@ -136,8 +138,6 @@ services:
       local:
         aliases:
           - r10k.${DOMAIN}
-    ports:
-      - 9050:9050
 
 volumes:
   ca_data:

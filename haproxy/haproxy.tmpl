@@ -1,3 +1,4 @@
+### GLOBALS ###
 global
   log  /dev/log local0
   log  /dev/log local1 notice
@@ -24,6 +25,7 @@ listen stats
   stats auth {{getenv "STATS_CRED"}}
   stats uri /
 
+### FRONTENDS ###
 frontend puppet-frontend
   bind *:8140 ssl crt /usr/local/etc/haproxy/ssl/haproxy.pem ca-file /usr/local/etc/haproxy/ssl/certs/ca.pem verify optional crl-file /usr/local/etc/haproxy/ssl/crl.pem
   mode http
@@ -55,6 +57,17 @@ frontend puppetexplorer-frontend
   mode http
   default_backend puppetexplorer-backend
 
+frontend nats-frontend
+  bind *:4222
+  mode tcp
+  default_backend nats-backend
+
+frontend r10k-frontend
+  bind *:9050
+  mode http
+  default_backend r10k-backend
+
+### BACKENDS ###
 backend puppet-backend
   balance roundrobin
   mode http
@@ -77,3 +90,13 @@ backend puppetexplorer-backend
   mode http
   option tcp-check
   server puppetexplorer {{getenv "PUPPETEXPLORER_BACKEND"}}:8080 check port 8080 inter 5s
+
+backend nats-backend
+  mode tcp
+  option tcp-check
+  server nats {{getenv "NATS_BACKEND"}}:4222 check port 4222 inter 5s
+
+backend r10k-backend
+  mode http
+  option tcp-check
+  server r10k {{getenv "R10K_BACKEND"}}:9050 check port 9050 inter 5s
