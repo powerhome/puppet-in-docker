@@ -28,7 +28,7 @@ COPY Dockerfile /
 
 # TODO checksum check
 RUN apt-get update && \
-    apt-get install -y wget git netcat vim locales xz-utils && \
+    apt-get install -y wget git netcat vim locales xz-utils gnupg && \
     locale-gen en_US.UTF-8
 RUN major_version=$(echo "${PUPPET_SERVER_VERSION}" | cut -d. -f1) && \
     wget https://apt.puppetlabs.com/puppet"$major_version"-release-"$UBUNTU_CODENAME".deb && \
@@ -46,6 +46,13 @@ RUN major_version=$(echo "${PUPPET_SERVER_VERSION}" | cut -d. -f1) && \
       -exec chgrp -R root {} + \
       -exec chown -R puppet {} + \
       -exec chmod -R g=rwX,g-s {} +
+
+RUN puppetserver gem install \
+      hiera-eyaml \
+      hiera-eyaml-gpg \
+      hiera-eyaml-kms \
+      ruby_gpg \
+      aws-sdk
 
 # Add configuration files into the image
 COPY config/puppetserver /etc/default/puppetserver
