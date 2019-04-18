@@ -5,8 +5,9 @@ if [ -n "$HIERA_BASE64" ]; then
   echo -e "$HIERA_BASE64" | base64 -d > /etc/puppetlabs/puppet/hiera.yaml
 fi
 
+mkdir -p ${GNUPGHOME}
 if [ -n "$HIERA_GPG_KEY_BASE64" ]; then
   echo "---> Importing GPG key to Hiera Keyring"
-  mkdir ${GNUPGHOME}
   echo "$HIERA_GPG_KEY_BASE64" | base64 -d | gpg --import
 fi
+chown -R puppet ${GNUPGHOME}
