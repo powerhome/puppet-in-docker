@@ -8,7 +8,8 @@ ENV DUMB_INIT_VERSION="1.2.2" \
     PUPPETSERVER_JAVA_ARGS="-Xms256m -Xmx256m" \
     PUPPETSERVER_JRUBYINSTANCES=2 \
     LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 LANGUAGE=en_US.UTF-8 \
-    PATH=/opt/puppetlabs/server/bin:/opt/puppetlabs/puppet/bin:/opt/puppetlabs/bin:$PATH
+    PATH=/opt/puppetlabs/server/bin:/opt/puppetlabs/puppet/bin:/opt/puppetlabs/bin:$PATH \
+    GNUPGHOME=/etc/puppetlabs/gnupg
 
 LABEL org.label-schema.vendor="VSHN AG" \
       org.label-schema.url="https://github.com/vshn/puppet-in-docker" \

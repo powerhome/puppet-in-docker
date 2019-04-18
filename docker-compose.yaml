@@ -62,6 +62,7 @@ services:
     environment:
       - CA_SERVER=ca.${DOMAIN}
       - PUPPETDB_SERVER=db.${DOMAIN}
+      - HIERA_GPG_KEY_BASE64=${HIERA_GPG_KEY_BASE64}
 
   db:
     hostname: db.${DOMAIN}
