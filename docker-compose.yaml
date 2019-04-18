@@ -2,39 +2,55 @@ version: "2.4"
 
 services:
   haproxy:
-    hostname: puppet.local
+    hostname: ${DOMAIN}
     build: haproxy
+    image: quay.io/powerhome/puppetaio_haproxy:latest
     volumes:
       - haproxy_ssl:/usr/local/etc/haproxy/ssl/
     networks:
       local:
         aliases:
-          - puppet.local
+          - ${DOMAIN}
+          - puppet
     ports:
-      - 8081:8081
-      - 8082:8082
-      - 8140:8140
-      - 9000:9000
+      - 4222:4222   #TCP   - API - MCollective NATS
+      - 8081:8081   #HTTPS - API - PuppetDB
+      - 8082:8082   #HTTPS - UI  - PuppetExplorer
+      - 8140:8140   #HTTPS - API - PuppetServer
+      - 9000:9000   #HTTP  - UI  - HAProxy stats
+      - 9050:9050   #HTTP  - API - R10K Webhook
     environment:
-      - CA_SERVER=puppetca.local
+      - STATS_CRED=${STATS_CRED}
+      - CA_SERVER=ca.${DOMAIN}
+      - PUPPETCA_BACKEND=ca.${DOMAIN}
+      - PUPPETDB_BACKEND=db.${DOMAIN}
+      - PUPPETSERVER_BACKEND=server.${DOMAIN}
+      - PUPPETEXPLORER_BACKEND=explorer.${DOMAIN}
+      - R10K_BACKEND=r10k.${DOMAIN}
 
-  puppetca:
-    hostname: puppetca.local
+  ca:
+    hostname: ca.${DOMAIN}
     build: puppetserver
+    image: quay.io/powerhome/puppetaio_server:latest
     volumes:
       - ca_ssl:/etc/puppetlabs/puppet/ssl/
       - ca_data:/opt/puppetlabs/server/data/puppetserver/
     networks:
       local:
         aliases:
-          - puppetca.local
+          - ca.${DOMAIN}
     environment:
       - CA=enabled
-      - CA_NAME=puppetca.local
+      - CA_NAME=ca.${DOMAIN}
+      - CA_SERVER=ca.${DOMAIN}
+      - CA_CRT_BASE64=${CA_CRT_BASE64}
+      - CA_KEY_BASE64=${CA_KEY_BASE64}
+      - CA_CRL_XZ_BASE64=${CA_CRL_XZ_BASE64}
 
-  puppetserver:
-    hostname: puppetserver.local
+  server:
+    hostname: server.${DOMAIN}
     build: puppetserver
+    image: quay.io/powerhome/puppetaio_server:latest
     volumes:
       - server_ssl:/etc/puppetlabs/puppet/ssl/
       - server_data:/opt/puppetlabs/server/data/puppetserver/
@@ -42,32 +58,42 @@ services:
     networks:
       local:
         aliases:
-          - puppetserver.local
+          - server.${DOMAIN}
+    environment:
+      - CA_SERVER=ca.${DOMAIN}
+      - PUPPETDB_SERVER=db.${DOMAIN}
+      - HIERA_GPG_KEY_BASE64=${HIERA_GPG_KEY_BASE64}
 
-  puppetdb:
-    hostname: puppetdb.local
+  db:
+    hostname: db.${DOMAIN}
     build: puppetdb
+    image: quay.io/powerhome/puppetaio_db:latest
     volumes:
       - db_ssl:/etc/puppetlabs/puppet/ssl/
     networks:
       local:
         aliases:
-          - puppetdb.local
+          - db.${DOMAIN}
     environment:
+      - CA_SERVER=ca.${DOMAIN}
       - PUPPETDB_USER=puppetdb
       - PUPPETDB_PASSWORD=${PUPPETDB_PASSWORD}
 
-  puppetexplorer:
-    hostname: puppetexplorer.local
+  explorer:
+    hostname: explorer.${DOMAIN}
     build: puppetexplorer
+    image: quay.io/powerhome/puppetaio_explorer:latest
     networks:
       local:
         aliases:
-          - puppetexplorer.local
+          - explorer.${DOMAIN}
+    environment:
+      - PUPPETDB_SERVER=db.${DOMAIN}
 
   postgres:
-    hostname: postgres.local
+    hostname: postgres.${DOMAIN}
     build: postgres
+    image: quay.io/powerhome/puppetaio_postgres:latest
     environment:
       - POSTGRES_USER=puppetdb
       - POSTGRES_PASSWORD=${PUPPETDB_PASSWORD}
@@ -76,37 +102,44 @@ services:
     networks:
       local:
         aliases:
-          - postgres.local
+          - postgres.${DOMAIN}
 
   nats:
-    hostname: nats.local
+    hostname: nats.${DOMAIN}
     build: nats
+    image: quay.io/powerhome/puppetaio_nats:latest
     environment:
-      - CA_SERVER=puppetca.local
+      - CA_SERVER=ca.${DOMAIN}
     volumes:
       - nats_ssl:/etc/nats/ssl
     networks:
       local:
         aliases:
-          - nats.local
-    ports:
-      - 4222:4222
+          - nats.${DOMAIN}
+    environment:
+      - CA_SERVER=ca.${DOMAIN}
 
   r10k:
-    hostname: r10k.local
+    hostname: r10k.${DOMAIN}
     build: r10k
+    image: quay.io/powerhome/puppetaio_r10k:latest
     environment:
+      - CA_SERVER=ca.${DOMAIN}
       - R10K_REPO=${R10K_REPO}
       - MCO_R10K_POLICY="policy default deny"
+      - NATS=nats.${DOMAIN}
+      - PUPPETDB=db.${DOMAIN}
+      - PUPPETSERVER=server.${DOMAIN}
+      - HOOKS_SECRET=${HOOKS_SECRET}
+      - R10K_DEPLOY_KEY_BASE64=${R10K_DEPLOY_KEY_BASE64}
     volumes:
       - r10k_env:/etc/puppetlabs/code/environments
       - r10k_cache:/opt/puppetlabs/r10k/cache
       - r10k_ssl:/etc/puppetlabs/puppet/ssl
-      - /root/.ssh/id_rsa:/root/.ssh/id_rsa
     networks:
       local:
         aliases:
-          - r10k.local
+          - r10k.${DOMAIN}
 
 volumes:
   ca_data:

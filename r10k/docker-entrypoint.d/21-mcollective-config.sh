@@ -2,7 +2,7 @@
 
 CA_SERVER=${CA_SERVER:-puppetca.local}
 IDENTITY=$(hostname)
-NATS=${NATS:-nats.local:4222}
+NATS=${NATS:-nats.local}:4222
 PUPPETDB=${PUPPETDB:-puppetdb.local}
 PUPPETSERVER=${PUPPETSERVER:-puppetserver.local}
 

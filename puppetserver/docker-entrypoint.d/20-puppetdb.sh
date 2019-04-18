@@ -2,7 +2,7 @@
 
 CN=$(hostname)
 
-PUPPETDB_URL=https://${PUPPETDB_SERVER_URL}/status/v1/services/puppetdb-status
+PUPPETDB_URL=https://${PUPPETDB_SERVER}:8081/status/v1/services/puppetdb-status
 
 if [ -n "$PUPPETDB_SERVER_URL" ]; then
   # Wait for PuppetDB API to be available
@@ -18,7 +18,7 @@ if [ -n "$PUPPETDB_SERVER_URL" ]; then
   echo "---> Configuring Puppetserver to connect to PuppetDB"
   cat > /etc/puppetlabs/puppet/puppetdb.conf <<EOF
 [main]
-server_urls = https://${PUPPETDB_SERVER_URL}
+server_urls = https://${PUPPETDB_SERVER}:8081
 soft_write_failure = true
 EOF
   puppet config set storeconfigs_backend puppetdb --section main

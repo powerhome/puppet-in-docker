@@ -8,7 +8,8 @@ ENV DUMB_INIT_VERSION="1.2.2" \
     PUPPETSERVER_JAVA_ARGS="-Xms256m -Xmx256m" \
     PUPPETSERVER_JRUBYINSTANCES=2 \
     LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 LANGUAGE=en_US.UTF-8 \
-    PATH=/opt/puppetlabs/server/bin:/opt/puppetlabs/puppet/bin:/opt/puppetlabs/bin:$PATH
+    PATH=/opt/puppetlabs/server/bin:/opt/puppetlabs/puppet/bin:/opt/puppetlabs/bin:$PATH \
+    GNUPGHOME=/etc/puppetlabs/gnupg
 
 LABEL org.label-schema.vendor="VSHN AG" \
       org.label-schema.url="https://github.com/vshn/puppet-in-docker" \
@@ -28,7 +29,7 @@ COPY Dockerfile /
 
 # TODO checksum check
 RUN apt-get update && \
-    apt-get install -y wget git netcat vim locales && \
+    apt-get install -y wget git netcat vim locales xz-utils gnupg && \
     locale-gen en_US.UTF-8
 RUN major_version=$(echo "${PUPPET_SERVER_VERSION}" | cut -d. -f1) && \
     wget https://apt.puppetlabs.com/puppet"$major_version"-release-"$UBUNTU_CODENAME".deb && \
@@ -47,12 +48,21 @@ RUN major_version=$(echo "${PUPPET_SERVER_VERSION}" | cut -d. -f1) && \
       -exec chown -R puppet {} + \
       -exec chmod -R g=rwX,g-s {} +
 
+RUN puppetserver gem install \
+      hiera-eyaml \
+      hiera-eyaml-gpg \
+      hiera-eyaml-kms \
+      ruby_gpg \
+      aws-sdk
+
 # Add configuration files into the image
 COPY config/puppetserver /etc/default/puppetserver
 COPY config/logback.xml /etc/puppetlabs/puppetserver/
 COPY config/request-logging.xml /etc/puppetlabs/puppetserver/
 COPY config/puppetdb.conf /etc/puppetlabs/puppet/
 COPY config/hiera.yaml /etc/puppetlabs/puppet/hiera.yaml
+COPY config/puppetserver.conf /etc/puppetlabs/puppetserver/conf.d/puppetserver.conf
+COPY config/auth.conf /etc/puppetlabs/puppetserver/conf.d/auth.conf
 
 # Add scripts to get started easily
 COPY config/simple-enc /etc/puppetlabs/puppet/simple-enc

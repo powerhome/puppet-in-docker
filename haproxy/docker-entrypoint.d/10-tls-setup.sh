@@ -36,7 +36,8 @@ if [ ! -f ${HAPROXY_PEM_FILE} ]; then
         /usr/local/bin/request-cert.rb \
         --caserver ${CA_SERVER} \
         --cn ${CN} \
-        --ssldir /usr/local/etc/haproxy/ssl"
+        --ssldir /usr/local/etc/haproxy/ssl \
+        --altnames ${CN},puppet,puppetserver,puppetca"
 
     if [ ! -f ${CERTFILE} ]; then
         echo "---> Certificate retrieval failed. Exiting"
