@@ -11,6 +11,7 @@ OptionParser.new do |opt|
   opt.on('--legacy [ true | false ]') { |o| @options[:legacy] = o }
   opt.on('--caserver CASERVER') { |o| @options[:caserver] = o }
   opt.on('--cn COMMONNAME') { |o| @options[:cn] = o }
+  opt.on('--altnames ALTNAME1,ALTNAME2,ALTNAMEn') { |o| @options[:altnames] = o }
 end.parse!
 
 def ssl_dir
@@ -23,6 +24,10 @@ end
 
 def certname
   @options[:cn]
+end
+
+def domains
+  @options[:altnames].split(',')
 end
 
 def ca_path
@@ -189,14 +194,14 @@ end
 def write_csr(key)
   raise("----> Refusing to overwrite existing CSR in %s" % csr_path) if has_csr?
 
-  csr = create_csr(certname, "mcollective", key)
+  csr = create_csr(certname, "mcollective", key, domains)
 
   File.open(csr_path, "w", 0o0644) {|f| f.write(csr.to_pem)}
 
   csr.to_pem
 end
 
-def create_csr(cn, ou, key)
+def create_csr(cn, ou, key, domains)
   # TODO use PSK "oid == "challengePassword""
   csr = OpenSSL::X509::Request.new
   csr.version = 0
@@ -207,6 +212,19 @@ def create_csr(cn, ou, key)
       ["OU", ou, OpenSSL::ASN1::UTF8STRING]
     ]
   )
+
+  san_list = domains.map { |domain| "DNS:#{domain}" }
+  extensions = [
+    OpenSSL::X509::ExtensionFactory.new.create_extension('subjectAltName', san_list.join(','))
+  ]
+  attribute_values = OpenSSL::ASN1::Set [OpenSSL::ASN1::Sequence(extensions)]
+  [
+    OpenSSL::X509::Attribute.new('extReq', attribute_values),
+    OpenSSL::X509::Attribute.new('msExtReq', attribute_values)
+  ].each do |attribute|
+    csr.add_attribute(attribute)
+  end
+
   csr.sign(key, OpenSSL::Digest::SHA1.new)
 
   csr
