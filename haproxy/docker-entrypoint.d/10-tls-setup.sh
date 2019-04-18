@@ -37,7 +37,7 @@ if [ ! -f ${HAPROXY_PEM_FILE} ]; then
         --caserver ${CA_SERVER} \
         --cn ${CN} \
         --ssldir /usr/local/etc/haproxy/ssl \
-        --altnames puppet,puppetserver,puppetca"
+        --altnames ${CN},puppet,puppetserver,puppetca"
 
     if [ ! -f ${CERTFILE} ]; then
         echo "---> Certificate retrieval failed. Exiting"
